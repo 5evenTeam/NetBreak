@@ -161,7 +161,7 @@ async def detect(host: str, port: int, timeout: float = 3.0) -> Detection:
         if port in HTTP_PORTS or port in TLS_HTTP_PORTS or text.startswith("HTTP/"):
             request = (
                 f"GET / HTTP/1.0\r\nHost: {host}\r\n"
-                "User-Agent: NetBreak/2.0\r\nAccept: */*\r\n\r\n"
+                "User-Agent: NetBreak/3.0\r\nAccept: */*\r\n\r\n"
             )
             writer.write(request.encode())
             await writer.drain()
@@ -206,7 +206,7 @@ async def detect(host: str, port: int, timeout: float = 3.0) -> Detection:
         elif not text and port not in BANNER_PORTS and port not in NON_HTTP_PORTS:
             request = (
                 f"GET / HTTP/1.0\r\nHost: {host}\r\n"
-                "User-Agent: NetBreak/2.0\r\nAccept: */*\r\n\r\n"
+                "User-Agent: NetBreak/3.0\r\nAccept: */*\r\n\r\n"
             )
             writer.write(request.encode())
             await writer.drain()
