@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 ![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)
-![Release 3.0.0.0](https://img.shields.io/badge/release-3.0.0.0-blue)
+![Release 3.0.0](https://img.shields.io/badge/release-3.0.0-blue)
 
 NetBreak is a TCP/UDP port scanner for Windows, macOS and Linux, built for
 authorized network reconnaissance. It ships three front ends over one shared

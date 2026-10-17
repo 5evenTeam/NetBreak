@@ -397,7 +397,7 @@ func main() {
 	case "udpscan":
 		os.Exit(runUDPScan(os.Args[2:]))
 	case "version":
-		fmt.Println("netbreak-engine 3.0.0.0")
+		fmt.Println("netbreak-engine 3.0.0")
 	default:
 		fmt.Fprintf(os.Stderr, "unknown command %q\n", os.Args[1])
 		os.Exit(2)
