@@ -4,30 +4,54 @@ build-backend = "hatchling.build"
 
 [project]
 name = "netbreak"
-version = "0.1.0"
-description = "NetBreak - a fast, friendly TUI port scanner for authorized network reconnaissance."
+version = "2.0.0"
+description = "NetBreak - a TCP/UDP port scanner with a terminal UI, a desktop app and a Nmap style command line."
 readme = "README.md"
 license = "MIT"
-authors = [{ name = "5evenTeam" }]
 requires-python = ">=3.10"
-keywords = ["pentest", "security", "port-scanner", "tui", "network"]
+keywords = ["security", "pentest", "port-scanner", "network", "tui", "nmap"]
+authors = [{ name = "5evenTeam" }]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
+    "Environment :: Win32 (MS Windows)",
     "Intended Audience :: Information Technology",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: C++",
+    "Programming Language :: Go",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+    "Topic :: System :: Networking",
 ]
 dependencies = [
     "textual>=0.85",
     "rich>=13.0",
 ]
 
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "pyinstaller>=6.0"]
+
 [project.urls]
 Homepage = "https://github.com/5evenTeam/NetBreak"
 Repository = "https://github.com/5evenTeam/NetBreak"
+Issues = "https://github.com/5evenTeam/NetBreak/issues"
+Changelog = "https://github.com/5evenTeam/NetBreak/blob/main/CHANGELOG.md"
 
 [project.scripts]
 netbreak = "netbreak.cli:main"
 
+[project.gui-scripts]
+netbreak-gui = "netbreak.desktop.app:main"
+
 [tool.hatch.build.targets.wheel]
 packages = ["netbreak"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

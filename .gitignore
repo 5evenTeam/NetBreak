@@ -14,6 +14,32 @@ env/
 # Build artifacts
 build/
 dist/
+native/cpp/build/
+
+# Compiled engines
+engines/go/bin/
+engines/cpp/bin/
+*.o
+*.obj
+*.exe
+
+# Installer output
+installer/Output/
+*.iss.bak
 
 # Scan exports
 netbreak_*.json
+netbreak_*.txt
+netbreak_*.xml
+netbreak_*.gnmap
+report.json
+report.xml
+report.txt
+report.gnmap
+
+# Editor and OS noise
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+desktop.ini
