@@ -161,13 +161,7 @@ class ScanEngine:
                 yield PortDiscovered(ref.address, result)
 
         if options.udp and options.ports.udp:
-            async for result in udp.scan(
-                ref.address,
-                options.ports.udp,
-                timeout=max(options.timeout * 2, 2.0),
-                cancel=self._cancel,
-            ):
-                result.service = result.service or service_for(result.port, "udp")
+            async for result in self._scan_udp(ref.address):
                 host.ports.append(result)
                 yield PortDiscovered(ref.address, result)
 
@@ -296,6 +290,30 @@ class ScanEngine:
             if process.returncode is None:
                 process.kill()
                 await process.wait()
+
+    async def _scan_udp(self, address: str) -> AsyncIterator[PortResult]:
+        options = self.options
+        if self.engine_name == "go" and self.engines.go:
+            produced = 0
+            async for result in self._external_scan(
+                self.engines.go,
+                ["udpscan", "-host", address, "-p", _spec_text(options.ports.udp)],
+                result_protocol="udp",
+            ):
+                produced += 1
+                yield result
+            if produced:
+                return
+            self.warnings.append("go engine returned nothing for udp, falling back to python engine")
+        async for result in udp.scan(
+            address,
+            options.ports.udp,
+            timeout=max(options.timeout * 2, 2.0),
+            cancel=self._cancel,
+        ):
+            result.service = result.service or service_for(result.port, "udp")
+            self._probed += 1
+            yield result
 
     async def _detect_versions(self, host: HostResult, address: str) -> AsyncIterator[Event]:
         open_ports = [p for p in host.ports if p.is_open]

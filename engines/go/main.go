@@ -275,9 +275,118 @@ func runPing(args []string) int {
 	return 0
 }
 
+
+var udpPayloads = map[int][]byte{
+	53:  {0xab, 0xcd, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x77, 0x77, 0x77, 0x07, 0x65, 0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x03, 0x63, 0x6f, 0x6d, 0x00, 0x00, 0x01, 0x00, 0x01},
+	123: {0x1b},
+	161: {0x30, 0x26, 0x02, 0x01, 0x01, 0x04, 0x06, 0x70, 0x75, 0x62, 0x6c, 0x69, 0x63},
+}
+
+func udpPayload(port int) []byte {
+	if p, ok := udpPayloads[port]; ok {
+		return p
+	}
+	return nil
+}
+
+func probeUDP(host string, port int, timeout time.Duration) payload {
+	address := net.JoinHostPort(host, strconv.Itoa(port))
+	start := time.Now()
+	conn, err := net.Dial("udp", address)
+	if err != nil {
+		return payload{Event: "port", Port: port, Proto: "udp", State: "filtered", Reason: "dial-error"}
+	}
+	defer conn.Close()
+	_ = conn.SetDeadline(time.Now().Add(timeout))
+	if p := udpPayload(port); len(p) > 0 {
+		if _, err := conn.Write(p); err != nil {
+			return payload{Event: "port", Port: port, Proto: "udp", State: "filtered", Reason: "write-error"}
+		}
+	}
+	buf := make([]byte, 65535)
+	n, err := conn.Read(buf)
+	rtt := round(float64(time.Since(start).Microseconds()) / 1000.0)
+	if err == nil && n > 0 {
+		return payload{Event: "port", Port: port, Proto: "udp", State: "open", Reason: "udp-response", RTT: rtt}
+	}
+	var opErr *net.OpError
+	if errors.As(err, &opErr) && opErr.Timeout() {
+		return payload{Event: "port", Port: port, Proto: "udp", State: "open|filtered", Reason: "no-response", RTT: rtt}
+	}
+	if err != nil {
+		message := strings.ToLower(err.Error())
+		if strings.Contains(message, "refused") || strings.Contains(message, "reset") {
+			return payload{Event: "port", Port: port, Proto: "udp", State: "closed", Reason: "icmp-port-unreachable", RTT: rtt}
+		}
+		if strings.Contains(message, "unreachable") {
+			return payload{Event: "port", Port: port, Proto: "udp", State: "filtered", Reason: "net-unreachable", RTT: rtt}
+		}
+	}
+	return payload{Event: "port", Port: port, Proto: "udp", State: "open|filtered", Reason: "no-response", RTT: rtt}
+}
+
+func runUDPScan(args []string) int {
+	flags := flag.NewFlagSet("udpscan", flag.ContinueOnError)
+	host := flags.String("host", "", "target address")
+	spec := flags.String("p", "", "udp port specification")
+	timeout := flags.Float64("timeout", 2.0, "per port timeout in seconds")
+	concurrency := flags.Int("concurrency", 150, "simultaneous probes")
+	if err := flags.Parse(args); err != nil {
+		return 2
+	}
+	out := newWriter()
+	if *host == "" || *spec == "" {
+		out.emit(payload{Event: "error", Message: "udpscan requires -host and -p"})
+		return 2
+	}
+	ports, err := parsePorts(*spec)
+	if err != nil {
+		out.emit(payload{Event: "error", Message: err.Error()})
+		return 2
+	}
+	if *concurrency < 1 {
+		*concurrency = 1
+	}
+	duration := time.Duration(*timeout * float64(time.Second))
+	jobs := make(chan int)
+	results := make(chan payload, *concurrency)
+	done := make(chan struct{})
+
+	var workers sync.WaitGroup
+	for index := 0; index < *concurrency; index++ {
+		workers.Add(1)
+		go func() {
+			defer workers.Done()
+			for port := range jobs {
+				results <- probeUDP(*host, port, duration)
+			}
+		}()
+	}
+	go func() {
+		for _, port := range ports {
+			jobs <- port
+		}
+		close(jobs)
+	}()
+	go func() {
+		workers.Wait()
+		close(results)
+	}()
+	go func() {
+		for result := range results {
+			out.emit(result)
+		}
+		close(done)
+	}()
+	<-done
+	out.emit(payload{Event: "done", Message: fmt.Sprintf("probed %d", out.emits)})
+	return 0
+}
+
+
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "usage: netbreak-engine <scan|ping> [options]")
+		fmt.Fprintln(os.Stderr, "usage: netbreak-engine <scan|ping|udpscan> [options]")
 		os.Exit(2)
 	}
 	switch os.Args[1] {
@@ -285,6 +394,8 @@ func main() {
 		os.Exit(runScan(os.Args[2:]))
 	case "ping":
 		os.Exit(runPing(os.Args[2:]))
+	case "udpscan":
+		os.Exit(runUDPScan(os.Args[2:]))
 	case "version":
 		fmt.Println("netbreak-engine 2.0.0")
 	default:
