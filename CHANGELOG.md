@@ -4,6 +4,32 @@ All notable changes to NetBreak are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-10-18
+
+UDP port scanning is now a first-class scan type instead of a best-guess
+placeholder that only ever reported `open|filtered` on Windows.
+
+### Added
+
+- UDP scanning in the Go engine (`netbreak-engine udpscan`) and the Python core,
+  wired through `-sU` and `--udp-ports`.
+- Protocol-aware UDP probes with response validation for DNS (53), DHCP
+  (67/68), TFTP (69), NTP (123), NetBIOS-NS (137), SNMP (161), SSDP (1900),
+  SIP (5060), mDNS (5353) and LLMNR (5355). A validated reply is reported as
+  `open` with the `udp-response:<service>` reason.
+- Raw ICMP capture in the Go engine so ICMP port-unreachable maps a port to
+  `closed`, host/protocol unreachable maps it to `filtered`, and silent ports
+  are retried before being reported as `open|filtered`.
+- Engine warnings when raw ICMP capture is unavailable or when the host OS
+  suppresses ICMP errors, so callers know how much to trust `open|filtered`.
+
+### Fixed
+
+- The Go UDP scanner no longer sends an empty datagram and treats a timeout as
+  `open|filtered` for everything; it now sends real probes and classifies the
+  result, so open UDP services are detected and closed ports are reported on
+  platforms that deliver ICMP errors.
+
 ## [2.0.0] - 2026-10-17
 
 Version 2.0 is a ground-up rewrite. The scanner was previously a single Textual
