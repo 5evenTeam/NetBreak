@@ -169,14 +169,17 @@ func TestProbeOpenUDP(t *testing.T) {
 	}
 }
 
-func TestProbeClosedUDPLinux(t *testing.T) {
+func TestProbeClosedLoopback(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping network probe in short mode")
 	}
 	scanner := newUDPScanner("127.0.0.1", 400*time.Millisecond, 1)
 	defer scanner.close()
 	res := scanner.probe(9)
-	if res.state == "open" {
-		t.Fatalf("port 9 should not be open: %+v", res)
+	if res.state != "closed" {
+		t.Fatalf("expected closed for an unused loopback udp port, got %+v", res)
+	}
+	if res.reason != "icmp-port-unreachable" {
+		t.Fatalf("expected icmp-port-unreachable reason, got %+v", res)
 	}
 }

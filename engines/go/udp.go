@@ -248,6 +248,7 @@ func (s *udpScanner) probe(port int) udpResult {
 		if err != nil {
 			return udpResult{state: "filtered", reason: "socket-error"}
 		}
+		enableUDPConnReset(conn)
 		local := conn.LocalAddr().(*net.UDPAddr).Port
 		s.register(local, port)
 		start := time.Now()

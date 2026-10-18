@@ -29,6 +29,9 @@ placeholder that only ever reported `open|filtered` on Windows.
   `open|filtered` for everything; it now sends real probes and classifies the
   result, so open UDP services are detected and closed ports are reported on
   platforms that deliver ICMP errors.
+- On Windows the connected UDP socket re-enables `SIO_UDP_CONNRESET`, which Go
+  disables by default, so ICMP port-unreachable is delivered as `WSAECONNRESET`
+  and closed ports are reported instead of silently timing out.
 
 ## [2.0.0] - 2026-10-17
 

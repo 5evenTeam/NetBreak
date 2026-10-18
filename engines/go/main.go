@@ -9,7 +9,6 @@ import (
 	"math"
 	"net"
 	"os"
-	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -303,9 +302,7 @@ func runUDPScan(args []string) int {
 	scanner := newUDPScanner(*host, duration, *retries)
 	defer scanner.close()
 	if scanner.icmp == nil {
-		out.emit(payload{Event: "warning", Message: "raw ICMP capture unavailable; run as administrator for accurate closed-port detection"})
-	} else if runtime.GOOS == "windows" {
-		out.emit(payload{Event: "warning", Message: "windows may suppress ICMP port-unreachable; closed UDP ports can appear as open|filtered"})
+		out.emit(payload{Event: "warning", Message: "raw ICMP capture unavailable; filtered-state detection is limited to socket errors"})
 	}
 	jobs := make(chan int)
 	results := make(chan payload, *concurrency)
